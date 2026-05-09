@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Client Records</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/">Calculator</a>
+        <a href="/records">Saved Records</a>
+        <div style="flex-grow: 1;"></div>
+        <span style="color: white; margin-right: 15px;">Hello, {{ current_user.full_name }} ({{ current_user.role.replace('_', ' ').title() }})</span>
+        <a href="/logout">Logout</a>
+    </nav>
+    <div class="container wide">
+        <h1>Saved Client Records</h1>
+
+        {% if current_user.role == 'manager' %}
+        <div class="filter-section" style="margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+            <form method="GET" action="/records">
+                <label for="officer_id">Filter by Loan Officer:</label>
+                <select name="officer_id" id="officer_id" onchange="this.form.submit()">
+                    <option value="">All Officers</option>
+                    {% for officer in officers %}
+                    <option value="{{ officer.id }}" {{ 'selected' if selected_officer_id == officer.id else '' }}>
+                        {{ officer.full_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <a href="/records" style="margin-left: 10px; font-size: 0.9em; color: #666;">Clear Filters</a>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="table-responsive">
+            <table class="records-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Client Name</th>
+                        <th>Email</th>
+                        {% if current_user.role == 'manager' %}
+                        <th>Loan Officer</th>
+                        {% endif %}
+                        <th>Job Title</th>
+                        <th>Type</th>
+                        <th>FHA</th>
+                        <th>Conv</th>
+                        <th>Recommendation</th>
+                        <th>AI status</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td>{{ record.assessment_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ record.client_name }}</td>
+                        <td>{{ record.client_email }}</td>
+                        {% if current_user.role == 'manager' %}
+                        <td>{{ record.officer.full_name }}</td>
+                        {% endif %}
+                        <td>{{ record.job_title }}</td>
+                        <td>{{ 'Self-Emp' if record.is_self_employed else 'W-2' }}</td>
+                        <td>
+                            <span class="badge {{ 'bg-success' if record.is_eligible_fha else 'bg-danger' }}">
+                                {{ 'Eligible' if record.is_eligible_fha else 'Not Eligible' }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {{ 'bg-success' if record.is_eligible_conv else 'bg-danger' }}">
+                                {{ 'Eligible' if record.is_eligible_conv else 'Not Eligible' }}
+                            </span>
+                        </td>
+                        <td>{{ record.summary_recommendation }}</td>
+                        <td>
+                            <span class="badge-status {{ record.verification_status.lower() }}">
+                                {{ record.verification_status }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="view-btn" onclick="toggleDetails('details-{{ record.id }}')">View</button>
+                        </td>
+                    </tr>
+                    <tr id="details-{{ record.id }}" style="display: none;" class="details-row">
+                        <td colspan="{{ '11' if current_user.role == 'manager' else '10' }}">
+                            <div class="details-content">
+                                <div class="details-grid">
+                                    <div>
+                                        <strong>Financials & Property:</strong><br>
+                                        Qualifying Income: ${{ "%.2f"|format(record.monthly_income) }}<br>
+                                        Monthly Debt: ${{ record.monthly_debt }}<br>
+                                        Property: {{ record.property_type }} ({{ record.occupancy_type }})<br>
+                                        Value: ${{ record.property_value }} | Down: ${{ record.down_payment }}
+                                    </div>
+                                    {% if record.is_self_employed %}
+                                    <div>
+                                        <strong>Business Info:</strong><br>
+                                        Type: {{ record.business_type }}<br>
+                                        Years: {{ record.years_in_business }}<br>
+                                        Prev Year: ${{ record.annual_net_profit_prev_year }}<br>
+                                        Current Year: ${{ record.annual_net_profit_current_year }}
+                                    </div>
+                                    {% else %}
+                                    <div>
+                                        <strong>Employment:</strong><br>
+                                        Standard W-2 Income
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>AI Logs:</strong><br>
+                                        <div style="font-size: 0.85em; background: #eee; padding: 5px; border-radius: 4px;">
+                                            {{ record.verification_logs }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">
+                                    <strong>Assessment Notes:</strong><br>
+                                    <p style="font-size: 0.9em; color: #555;">{{ record.assessment_notes }}</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        function toggleDetails(id) {
+            var el = document.getElementById(id);
+            if (el.style.display === 'none') {
+                el.style.display = 'table-row';
+            } else {
+                el.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+                          </html>
