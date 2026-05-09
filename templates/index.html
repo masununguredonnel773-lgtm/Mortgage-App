@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mortgage Eligibility Calculator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        function toggleSelfEmployed() {
+            const isChecked = document.getElementById('is_self_employed').checked;
+            document.getElementById('business-fields').style.display = isChecked ? 'block' : 'none';
+            document.getElementById('standard-income-field').style.display = isChecked ? 'none' : 'block';
+            
+            const businessInputs = document.querySelectorAll('#business-fields input, #business-fields select');
+            businessInputs.forEach(input => input.required = isChecked);
+            document.getElementById('monthly_income').required = !isChecked;
+        }
+        window.onload = toggleSelfEmployed;
+    </script>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/">Calculator</a>
+        <a href="/records">Saved Records</a>
+        <div style="flex-grow: 1;"></div>
+        <span style="color: white; margin-right: 15px;">Hello, {{ current_user.full_name }} ({{ current_user.role.replace('_', ' ').title() }})</span>
+        <a href="/logout">Logout</a>
+    </nav>
+    <div class="container">
+        <h1>Mortgage Eligibility Calculator</h1>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="section-header">Client Identity</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="client_name">Client Name:</label>
+                    <input type="text" id="client_name" name="client_name" value="{{ inputs.get('client_name', '') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="client_email">Client Email:</label>
+                    <input type="email" id="client_email" name="client_email" value="{{ inputs.get('client_email', '') }}" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="job_title">Job Title:</label>
+                <input type="text" id="job_title" name="job_title" value="{{ inputs.get('job_title', '') }}" required placeholder="e.g. Software Engineer">
+            </div>
+
+            <div class="section-header">Employment Type</div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="is_self_employed" name="is_self_employed" onchange="toggleSelfEmployed()" {% if inputs.get('is_self_employed') %}checked{% endif %}>
+                    Self-Employed (25%+ ownership)
+                </label>
+            </div>
+
+            <div id="standard-income-field">
+                <div class="form-group">
+                    <label for="monthly_income">Monthly Gross Income ($):</label>
+                    <input type="number" id="monthly_income" name="monthly_income" step="0.01" value="{{ inputs.get('monthly_income', '') }}">
+                </div>
+            </div>
+
+            <div id="business-fields" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="business_type">Business Type:</label>
+                        <select id="business_type" name="business_type">
+                            <option value="Sole Proprietorship" {% if inputs.get('business_type') == 'Sole Proprietorship' %}selected{% endif %}>Sole Proprietorship</option>
+                            <option value="S-Corp" {% if inputs.get('business_type') == 'S-Corp' %}selected{% endif %}>S-Corp</option>
+                            <option value="Partnership" {% if inputs.get('business_type') == 'Partnership' %}selected{% endif %}>Partnership</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="years_in_business">Years in Business:</label>
+                        <input type="number" id="years_in_business" name="years_in_business" value="{{ inputs.get('years_in_business', '') }}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="annual_net_profit_prev_year">Prev Year Net Profit ($):</label>
+                        <input type="number" id="annual_net_profit_prev_year" name="annual_net_profit_prev_year" step="0.01" value="{{ inputs.get('annual_net_profit_prev_year', '') }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="annual_net_profit_current_year">Current Year Net Profit ($):</label>
+                        <input type="number" id="annual_net_profit_current_year" name="annual_net_profit_current_year" step="0.01" value="{{ inputs.get('annual_net_profit_current_year', '') }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-header">Property & Financials</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="property_type">Property Type:</label>
+                    <select id="property_type" name="property_type">
+                        <option value="Single Family" {% if inputs.get('property_type') == 'Single Family' %}selected{% endif %}>Single Family</option>
+                        <option value="Condo" {% if inputs.get('property_type') == 'Condo' %}selected{% endif %}>Condo</option>
+                        <option value="Multi-family" {% if inputs.get('property_type') == 'Multi-family' %}selected{% endif %}>Multi-family (2-4)</option>
+                        <option value="Manufactured" {% if inputs.get('property_type') == 'Manufactured' %}selected{% endif %}>Manufactured</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="occupancy_type">Occupancy:</label>
+                    <select id="occupancy_type" name="occupancy_type">
+                        <option value="Primary" {% if inputs.get('occupancy_type') == 'Primary' %}selected{% endif %}>Primary</option>
+                        <option value="Secondary" {% if inputs.get('occupancy_type') == 'Secondary' %}selected{% endif %}>Secondary</option>
+                        <option value="Investment" {% if inputs.get('occupancy_type') == 'Investment' %}selected{% endif %}>Investment</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="credit_score">Credit Score (300-850):</label>
+                    <input type="number" id="credit_score" name="credit_score" min="300" max="850" value="{{ inputs.get('credit_score', '') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="monthly_debt">Monthly Debt ($):</label>
+                    <input type="number" id="monthly_debt" name="monthly_debt" step="0.01" value="{{ inputs.get('monthly_debt', '') }}" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="property_value">Property Value ($):</label>
+                    <input type="number" id="property_value" name="property_value" step="0.01" value="{{ inputs.get('property_value', '') }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="down_payment">Down Payment ($):</label>
+                    <input type="number" id="down_payment" name="down_payment" step="0.01" value="{{ inputs.get('down_payment', '') }}" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="proposed_housing_payment">Proposed Housing Pymt (PITI) ($):</label>
+                <input type="number" id="proposed_housing_payment" name="proposed_housing_payment" step="0.01" value="{{ inputs.get('proposed_housing_payment', '') }}" required>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit">Check Eligibility & Save</button>
+                <a href="/" class="reset-btn">Clear Form</a>
+            </div>
+        </form>
+
+        {% if results %}
+            <div class="results">
+                {% if results.error %}
+                    <p class="error">{{ results.error }}</p>
+                {% else %}
+                    <h2>Assessment Results</h2>
+                    
+                    <div class="summary-recommendation">
+                        <h3>Officer Action: {{ results.recommendation }}</h3>
+                    </div>
+
+                    {% if verification %}
+                    <div class="verification-card {{ verification.status.lower() }}">
+                        <h3>AI Verification: {{ verification.status }}</h3>
+                        <pre>{{ verification.logs }}</pre>
+                    </div>
+                    {% endif %}
+
+                    <div class="metrics">
+                        <p><strong>Qualifying Monthly Income:</strong> ${{ "%.2f"|format(inputs.monthly_income) }}</p>
+                        <p><strong>LTV:</strong> {{ results.ltv }}%</p>
+                        <p><strong>DTI Back-End:</strong> {{ results.dti_back }}%</p>
+                    </div>
+                    <div class="eligibility">
+                        <div class="loan-type {{ 'eligible' if results.conventional else 'not-eligible' }}">
+                            <h3>Conventional</h3>
+                            <p>{{ 'ELIGIBLE' if results.conventional else 'NOT ELIGIBLE' }}</p>
+                        </div>
+                        <div class="loan-type {{ 'eligible' if results.fha else 'not-eligible' }}">
+                            <h3>FHA</h3>
+                            <p>{{ 'ELIGIBLE' if results.fha else 'NOT ELIGIBLE' }}</p>
+                        </div>
+                    </div>
+                    {% if results.notes %}
+                        <div class="notes">
+                            <h3>Notes:</h3>
+                            <ul>
+                                {% for note in results.notes %}
+                                    <li>{{ note }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    {% if tips %}
+                        <div class="officer-tips">
+                            <h3>Officer Guidance:</h3>
+                            {% for category, items in tips.items() %}
+                                {% if items %}
+                                    <h4>{{ category }}</h4>
+                                    <ul>
+                                        {% for item in items %}
+                                            <li>{{ item }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</body>
+          </html>
