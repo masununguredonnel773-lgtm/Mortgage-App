@@ -14,7 +14,7 @@ from engine import calculate_self_employed_income, ai_verify, check_eligibility,
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-12345')
-app.config['SQLALCHEMY_DATABASE_URI'] = sqlite:////tmp/mortgage_records.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/mortgage_records.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
