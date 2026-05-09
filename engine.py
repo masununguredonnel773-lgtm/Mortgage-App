@@ -1,13 +1,13 @@
 import os
 import json
 import google.generativeai as genai
-
-# Configure AI (Gemini)
-api_key = os.environ.get("GOOGLE_API_KEY")
-if api_key:
-    genai.configure(api_key=api_key)
-    ai_model = genai.GenerativeModel('gemini-1.5-flash')
-else:
+    api_key = os.environ.get("GOOGLE_API_KEY")
+    if api_key:
+        genai.configure(api_key=api_key)
+        ai_model = genai.GenerativeModel('gemini-1.5-flash')
+    else:
+        ai_model = None
+except Exception:
     ai_model = None
 
 def calculate_self_employed_income(data):
